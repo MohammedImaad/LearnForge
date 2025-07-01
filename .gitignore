@@ -1,0 +1,14 @@
+# Python
+*.pyc
+__pycache__/
+.env
+venv/
+
+# Node (if you add frontend)
+node_modules/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
