@@ -10,12 +10,23 @@ from bson import ObjectId
 from db import courses_collection, users_collection
 from dotenv import load_dotenv
 from ai_chat import chat_router
+from auth import auth_router
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Query
 
 # Load environment variables
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change this to your frontend URL in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # === INPUT MODEL ===
 class CourseRequest(BaseModel):
@@ -146,5 +157,16 @@ def list_courses():
         results.append(course)
     return results
 
+@app.get("/courses/by-author")
+def get_courses_by_author(author: str = Query(...)):
+    results = []
+    for course in courses_collection.find({"author": author}):
+        course["_id"] = str(course["_id"])
+        results.append(course)
+    return results
+
+    
 app.include_router(chat_router)
+app.include_router(auth_router)
+
 
