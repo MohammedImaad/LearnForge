@@ -9,6 +9,7 @@ const CreateCourse = () => {
   const [objectives, setObjectives] = useState([""]);
   const [prompts, setPrompts] = useState([""]);
   const [resources, setResources] = useState([""]);
+  const [generatedCourse, setGeneratedCourse] = useState(null);
 
   const navigate = useNavigate();
 
@@ -46,7 +47,8 @@ const CreateCourse = () => {
 
     if (res.ok) {
       console.log("✅ AI Generated Course:\n", data);
-      alert("✅ Course generated successfully! Check console.");
+      setGeneratedCourse(data); 
+
     } else {
       console.error("❌ Error from backend:", data);
       alert("❌ Failed to generate course. Check console.");
@@ -166,12 +168,102 @@ const CreateCourse = () => {
         <button style={buttonStyle} onClick={() => addField(setResources, resources)}>+ Add Resource</button>
       </div>
 
-      <button
-        style={{ ...buttonStyle, backgroundColor: "#007bff" }}
-        onClick={handleGenerate}
-      >
-        🚀 Generate Course
-      </button>
+      <button style={{ ...buttonStyle, backgroundColor: "#007bff" }} onClick={handleGenerate}>
+  🚀 Generate Course
+</button>
+
+{generatedCourse && (
+  <div style={{ marginTop: "3rem", padding: "1rem", background: "#f9f9f9", borderRadius: "8px" }}>
+    <h2>📝 Edit Generated Course</h2>
+
+    {Object.entries(generatedCourse).map(([weekKey, weekData], weekIndex) => (
+      <div key={weekKey} style={{ marginBottom: "2rem" }}>
+        <h3 style={{ marginBottom: "1rem", color: "#007bff" }}>
+          📅 {weekKey.toUpperCase()} — {weekData.objectives}
+        </h3>
+
+        {weekData.slides.map((slide, slideIndex) => (
+          <div
+            key={slideIndex}
+            style={{
+              background: "#fff",
+              padding: "1rem",
+              marginBottom: "1rem",
+              border: "1px solid #ddd",
+              borderRadius: "8px"
+            }}
+          >
+            {"title" in slide && (
+              <>
+                <label><b>Title</b></label>
+                <input
+                  type="text"
+                  value={slide.title}
+                  onChange={(e) => {
+                    const updated = { ...generatedCourse };
+                    updated[weekKey].slides[slideIndex].title = e.target.value;
+                    setGeneratedCourse(updated);
+                  }}
+                  style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
+                />
+              </>
+            )}
+
+            {"explanation" in slide && (
+              <>
+                <label><b>Explanation</b></label>
+                <textarea
+                  rows={3}
+                  value={slide.explanation}
+                  onChange={(e) => {
+                    const updated = { ...generatedCourse };
+                    updated[weekKey].slides[slideIndex].explanation = e.target.value;
+                    setGeneratedCourse(updated);
+                  }}
+                  style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
+                />
+              </>
+            )}
+
+            {"extra" in slide && (
+              <>
+                <label><b>Extra</b></label>
+                <input
+                  type="text"
+                  value={slide.extra}
+                  onChange={(e) => {
+                    const updated = { ...generatedCourse };
+                    updated[weekKey].slides[slideIndex].extra = e.target.value;
+                    setGeneratedCourse(updated);
+                  }}
+                  style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
+                />
+              </>
+            )}
+
+            {"challenge" in slide && (
+              <>
+                <label><b>Challenge</b></label>
+                <textarea
+                  rows={2}
+                  value={slide.challenge}
+                  onChange={(e) => {
+                    const updated = { ...generatedCourse };
+                    updated[weekKey].slides[slideIndex].challenge = e.target.value;
+                    setGeneratedCourse(updated);
+                  }}
+                  style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
+                />
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    ))}
+  </div>
+)}
+
+
     </div>
   );
 };
