@@ -13,4 +13,4 @@ db = client[DB_NAME]
 # Collections
 courses_collection = db["courses"]
 memory_collection = db["chat_memory"]
-users_collection = db["logins"]
+users_collection = db["users"]

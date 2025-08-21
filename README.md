@@ -107,3 +107,6 @@ MIT License
 ---
 
 **Repo**: [https://github.com/MohammedImaad/ai-course-agent](https://github.com/MohammedImaad/ai-course-agent)
+
+
+uvicorn main:app --reload 
