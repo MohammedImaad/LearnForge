@@ -6,15 +6,16 @@ const TeacherDashboard = () => {
   const [courses, setCourses] = useState([]);
   const navigate = useNavigate();
   const username = localStorage.getItem("username");
+  const _id=localStorage.getItem("_id");
 
   useEffect(() => {
-    if (!username) return;
+    if (!_id) return;
 
-    fetch(`${API_BASE_URL}/courses/by-author?author=${username}`)
+    fetch(`${API_BASE_URL}/courses/by-user?user_id=${_id}`)
       .then(res => res.json())
-      .then(data => setCourses(data))
+      .then(data => {setCourses(data); console.log(data)})
       .catch(err => console.error("Error loading courses:", err));
-  }, [username]);
+  }, [_id]);
 
   const handleCreate = () => {
     navigate("/create-course");
@@ -22,18 +23,33 @@ const TeacherDashboard = () => {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.welcome}>👋 Welcome, {username}</h1>
-      <div style={styles.header}>
-        <h2>Your Courses</h2>
-        <button onClick={handleCreate} style={styles.createButton}>
-          ➕ Create New Course
-        </button>
-      </div>
-      <div style={styles.courseList}>
+      <h1 style={styles.heading}>My Courses</h1>
+      <button
+        onClick={handleCreate}
+        style={styles.button}
+        onMouseEnter={(e) => (e.target.style.backgroundColor = "#388bfd")}
+        onMouseLeave={(e) => (e.target.style.backgroundColor = "#1f6feb")}
+      >
+        Build a New Course
+      </button>
+      <div style={styles.courses}>
         {courses.map(course => (
-          <button key={course._id} style={styles.courseButton}>
-            {course.title}
-          </button>
+          <div
+          style={styles.card}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-5px)";
+            e.currentTarget.style.boxShadow = "0px 6px 18px rgba(0,0,0,0.3)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "none";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
+          <h2 style={styles.cardTitle}>{course.course_data.courseTitle}</h2>
+          <p style={styles.cardText}>
+            {course.course_data.courseDescription}
+          </p>
+        </div>
         ))}
       </div>
     </div>
@@ -41,48 +57,54 @@ const TeacherDashboard = () => {
 };
 
 const styles = {
-  container: {
-    padding: "2rem",
-    fontFamily: "Arial, sans-serif",
-    backgroundColor: "#f9fafb",
-    minHeight: "100vh"
-  },
-  welcome: {
-    fontSize: "2rem",
-    color: "#333"
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: "1rem",
-    marginBottom: "1rem"
-  },
-  createButton: {
-    padding: "0.5rem 1rem",
-    fontSize: "1rem",
-    backgroundColor: "#4f46e5",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer"
-  },
-  courseList: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "1rem"
-  },
-  courseButton: {
-    padding: "1rem",
-    backgroundColor: "#e0e7ff",
-    border: "1px solid #c7d2fe",
-    borderRadius: "8px",
-    fontSize: "1rem",
-    cursor: "pointer",
-    minWidth: "150px",
-    textAlign: "center",
-    color: "#1e40af"
-  }
-};
+    container: {
+      textAlign: "center",
+      padding: "50px 20px",
+      fontFamily: "Arial, sans-serif",
+      backgroundColor: "#0d1117",
+      color: "#e6edf3",
+      minHeight: "100vh",
+    },
+    heading: {
+      fontSize: "2.5rem",
+      marginBottom: "20px",
+    },
+    button: {
+      backgroundColor: "#1f6feb",
+      color: "white",
+      border: "none",
+      padding: "12px 24px",
+      fontSize: "1rem",
+      borderRadius: "8px",
+      cursor: "pointer",
+      marginBottom: "40px",
+      transition: "background-color 0.3s",
+    },
+    courses: {
+      display: "flex",
+      justifyContent: "center",
+      gap: "20px",
+      flexWrap: "wrap",
+    },
+    card: {
+      backgroundColor: "#161b22",
+      border: "1px solid #30363d",
+      borderRadius: "12px",
+      padding: "20px",
+      width: "280px",
+      textAlign: "left",
+      transition: "transform 0.2s, box-shadow 0.2s",
+    },
+    cardTitle: {
+      fontSize: "1.2rem",
+      marginBottom: "10px",
+      color: "#fff",
+    },
+    cardText: {
+      fontSize: "0.95rem",
+      color: "#b1bac4",
+      lineHeight: "1.4",
+    },
+  };
 
 export default TeacherDashboard;

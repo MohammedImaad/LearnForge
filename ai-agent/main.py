@@ -39,9 +39,8 @@ class CourseRequest(BaseModel):
     resources: List[str] = []
 
 class CoursePayload(BaseModel):
-    title: str
-    author: str
-    course_data: Dict  # Full JSON from GPT output
+    user_id:str
+    course_data: Dict 
 
 class UserPayload(BaseModel):
     username: str
@@ -93,6 +92,8 @@ Return exactly {slides_per_week} slides per week. Do not return fewer.
 In Extras add actual examples or resources.
 Return ONLY valid JSON in this format which could be parsed with json.loads in python:
 {{
+"title":"Generate a title",
+"description":"Generate a description",
   "week1": {{ "objectives": "...", "slides": [...], "quiz": [...] }},
   "week2": {{ "objectives": "...", "slides": [...], "quiz": [...] }},
   ...
@@ -142,8 +143,7 @@ async def generate_course(data: CourseRequest):
 @app.post("/courses/save")
 def save_course(course: CoursePayload):
     result = courses_collection.insert_one({
-        "title": course.title,
-        "author": course.author,
+        "user_id": ObjectId(course.user_id),
         "course_data": course.course_data
     })
     return {"message": "Course saved", "id": str(result.inserted_id)}
@@ -157,12 +157,31 @@ def list_courses():
         results.append(course)
     return results
 
-@app.get("/courses/by-author")
-def get_courses_by_author(author: str = Query(...)):
+def convert_objectids(doc):
+    """Recursively convert all ObjectId fields to strings."""
+    if isinstance(doc, list):
+        return [convert_objectids(d) for d in doc]
+    elif isinstance(doc, dict):
+        new_doc = {}
+        for k, v in doc.items():
+            if isinstance(v, ObjectId):
+                new_doc[k] = str(v)
+            else:
+                new_doc[k] = convert_objectids(v)
+        return new_doc
+    else:
+        return doc
+
+@app.get("/courses/by-user")
+def get_courses_by_user(user_id: str = Query(...)):
+    try:
+        user_obj_id = ObjectId(user_id)
+    except errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid user_id format")
+
     results = []
-    for course in courses_collection.find({"author": author}):
-        course["_id"] = str(course["_id"])
-        results.append(course)
+    for course in courses_collection.find({"user_id": user_obj_id}):
+        results.append(convert_objectids(course))
     return results
 
     

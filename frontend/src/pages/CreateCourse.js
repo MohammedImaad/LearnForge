@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const CreateCourse = () => {
+  const [courseTitle, setCourseTitle] = useState("");
+  const [courseDescription, setCourseDescription] = useState("");
   const [topic, setTopic] = useState("");
   const [audience, setAudience] = useState("kids aged 8–14");
   const [weeks, setWeeks] = useState(1);
@@ -32,6 +34,34 @@ const CreateCourse = () => {
 
   const saveCourse = async () => {
     console.log(generatedCourse)
+    generatedCourse['courseTitle']=courseTitle;
+    generatedCourse['courseDescription']=courseDescription;
+    const payload={
+      user_id:localStorage.getItem("_id"),
+      course_data:generatedCourse
+    }
+    try {
+    const res = await fetch("http://localhost:8000/courses/save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      console.log('Course Saved Sucessfully')
+
+    } else {
+      console.error("❌ Error from backend:", data);
+      alert("❌ Failed to generate course. Check console.");
+    }
+  } catch (error) {
+    console.error("❌ Network or server error:", error);
+    alert("❌ Error connecting to backend.");
+  }
 
   };
   const handleGenerate = async () => {
@@ -44,7 +74,6 @@ const CreateCourse = () => {
     prompts: prompts.filter(p => p.trim() !== ""),
     resources: resources.filter(r => r.trim() !== "")
   };
-  console.log(payload)
 
  try {
     const res = await fetch("http://localhost:8000/generate", {
@@ -59,6 +88,10 @@ const CreateCourse = () => {
 
     if (res.ok) {
       console.log("✅ AI Generated Course:\n", data);
+      setCourseTitle(data.title)
+      setCourseDescription(data.description);
+      delete data.title;
+      delete data.description;
       setGeneratedCourse(data);
       const allQuizzes = Object.values(data).flatMap(week => week.quiz || []);
       setQuiz(allQuizzes);
