@@ -41,5 +41,6 @@ def login_user(payload: LoginPayload):
 
     if not user:
         return {"error": "Invalid username or password"}
+    
 
-    return {"message": "Login successful", "type": user["type"]}
+    return {"message": "Login successful", "type": user["type"],"id": str(user["_id"]) }

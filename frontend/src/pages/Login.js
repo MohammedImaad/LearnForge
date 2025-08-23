@@ -21,6 +21,7 @@ function Login() {
       // ✅ Store values in localStorage
       localStorage.setItem("username", username);
       localStorage.setItem("userType", data.type);
+      localStorage.setItem("_id",data.id);
 
       // ✅ Redirect based on type
       if (data.type === "teacher") {

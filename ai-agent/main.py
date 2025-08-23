@@ -63,7 +63,7 @@ You are a curriculum designer for {audience}.
 Create a {weeks}-week beginner course on the topic: "{topic}".
 
 Each week must include:
-- "objectives": use exactly what the user provides below
+- "objectives": use exactly what the user says but frame it better
 - "slides": approximately {slides_per_week} slides per week
     - each slide either has:
         - "title"
@@ -72,7 +72,7 @@ Each week must include:
     - or:
         Just a question that they need to search on the internet or a challenge
     The lesson should be mix of both the slides there should challenges in the middle.
-    Make the explanations at least 100 characters.
+    Make the explanations as descriptive as possible.
 - "quiz": 10 multiple-choice questions per week
     - each with:
         - "question"
