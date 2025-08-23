@@ -33,24 +33,93 @@ function Login() {
       alert(data.error || "Login failed");
     }
   };
+  const styles = {
+    container: {
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100vh",
+      backgroundColor: "#0d1117",
+      fontFamily: "Arial, sans-serif",
+    },
+    formBox: {
+      backgroundColor: "#161b22",
+      padding: "40px",
+      borderRadius: "12px",
+      boxShadow: "0px 4px 12px rgba(0,0,0,0.4)",
+      width: "350px",
+      textAlign: "center",
+    },
+    heading: {
+      fontSize: "2rem",
+      color: "#fff",
+      marginBottom: "30px",
+    },
+    label: {
+      display: "block",
+      textAlign: "left",
+      marginBottom: "8px",
+      fontSize: "0.95rem",
+      color: "#c9d1d9",
+    },
+    input: {
+      width: "100%",
+      padding: "12px",
+      marginBottom: "20px",
+      borderRadius: "8px",
+      border: "1px solid #30363d",
+      backgroundColor: "#0d1117",
+      color: "#e6edf3",
+      fontSize: "1rem",
+      outline: "none",
+    },
+    button: {
+      width: "100%",
+      padding: "12px",
+      backgroundColor: "#1f6feb",
+      border: "none",
+      borderRadius: "8px",
+      color: "white",
+      fontSize: "1rem",
+      fontWeight: "bold",
+      cursor: "pointer",
+      transition: "background-color 0.3s",
+    },
+    buttonHover: {
+      backgroundColor: "#388bfd",
+    },
+    forgot: {
+      marginTop: "15px",
+      fontSize: "0.9rem",
+      color: "#8b949e",
+      cursor: "pointer",
+    },
+  };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        /><br /><br />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        /><br /><br />
-        <button type="submit">Login</button>
-      </form>
+
+    <div style={styles.container}>
+      <div style={styles.formBox}>
+        <form onSubmit={handleSubmit}>
+          <label style={styles.label}>Username</label>
+          <input type="name" style={styles.input} placeholder="Enter email" value={username}
+          onChange={(e) => setUsername(e.target.value)}/>
+
+          <label style={styles.label}>Password</label>
+          <input type="password" style={styles.input} placeholder="Enter password" value={password}
+          onChange={(e) => setPassword(e.target.value)}/>
+
+          <button
+            type="submit"
+            style={styles.button}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = "#388bfd")}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = "#1f6feb")}
+          >
+            Log in
+          </button>
+        </form>
+      </div>
+
     </div>
   );
 }
