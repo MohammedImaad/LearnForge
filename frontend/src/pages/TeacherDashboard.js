@@ -20,6 +20,29 @@ const TeacherDashboard = () => {
   const handleCreate = () => {
     navigate("/create-course");
   };
+  const createPDF = async (course) => {
+  try {
+    const response = await fetch("http://localhost:8000/slides/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ course_id: course._id })
+    });
+
+    const data = await response.json();
+    console.log("Slides API response:", data);
+
+    if (data.presentation_id || data.week_presentations) {
+      alert("Slides created successfully!");
+    } else if (data.error) {
+      alert("Error creating slides: " + data.error);
+    }
+  } catch (err) {
+    console.error("Error calling slides API:", err);
+    alert("Failed to create slides. See console for details.");
+  }
+};
 
   return (
     <div style={styles.container}>
@@ -49,7 +72,7 @@ const TeacherDashboard = () => {
           <p style={styles.cardText}>
             {course.course_data.courseDescription}
           </p>
-          <button style={styles.buttonStyle}>Build the pdf</button>
+          <button style={styles.buttonStyle} onClick={() => createPDF(course)}>Build the pdf</button>
         </div>
         ))}
       </div>
