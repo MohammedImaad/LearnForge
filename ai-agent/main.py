@@ -13,10 +13,20 @@ from ai_chat import chat_router
 from auth import auth_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Query
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+import pickle
+import os
+class SlideDeckRequest(BaseModel):
+    course_id: str
+
 
 # Load environment variables
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
 
 app = FastAPI()
 app.add_middleware(
@@ -136,6 +146,69 @@ async def generate_course(data: CourseRequest):
 
         # Step 2: Parse it as real JSON
         return json.loads(raw_output)
+
+    except Exception as e:
+        return {"error": str(e)}
+
+SCOPES = ['https://www.googleapis.com/auth/presentations']
+TOKEN_FILE = 'token.pkl'
+CREDENTIALS_FILE = 'credentials.json'
+
+def get_slides_service():
+    creds = None
+    # Load saved credentials if available
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, 'rb') as token:
+            creds = pickle.load(token)
+    # If not, run OAuth flow
+    if not creds or not creds.valid:
+        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+        creds = flow.run_local_server(port=0)
+        with open(TOKEN_FILE, 'wb') as token:
+            pickle.dump(creds, token)
+    service = build('slides', 'v1', credentials=creds)
+    return service
+
+@app.post("/slides/create")
+def create_slide_deck(data: SlideDeckRequest):
+    try:
+        # Find the course in DB
+        course = courses_collection.find_one({"_id": ObjectId(data.course_id)})
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+
+        service = get_slides_service()
+
+        # Create a new presentation
+        presentation = service.presentations().create(
+            body={"title": course["course_data"].get("title", "Untitled Course")}
+        ).execute()
+        presentation_id = presentation['presentationId']
+
+        # Add a slide
+        requests = [
+            {
+                'createSlide': {
+                    'slideLayoutReference': {
+                        'predefinedLayout': 'TITLE_AND_BODY'
+                    }
+                }
+            }
+        ]
+        service.presentations().batchUpdate(
+            presentationId=presentation_id,
+            body={'requests': requests}
+        ).execute()
+
+        # Convert ObjectId for safe JSON return
+        course["_id"] = str(course["_id"])
+        course["user_id"] = str(course["user_id"])
+
+        return {
+            "message": "Presentation created with a slide",
+            "presentation_id": presentation_id,
+            "course": course
+        }
 
     except Exception as e:
         return {"error": str(e)}

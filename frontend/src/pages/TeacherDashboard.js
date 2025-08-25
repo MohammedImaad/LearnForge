@@ -49,6 +49,7 @@ const TeacherDashboard = () => {
           <p style={styles.cardText}>
             {course.course_data.courseDescription}
           </p>
+          <button style={styles.buttonStyle}>Build the pdf</button>
         </div>
         ))}
       </div>
@@ -105,6 +106,18 @@ const styles = {
       color: "#b1bac4",
       lineHeight: "1.4",
     },
+     buttonStyle:{
+    background: "#000", 
+    color: "#00aaff", 
+    border: "2px solid #00aaff",
+    borderRadius: "8px",
+    padding: "10px 20px",
+    fontSize: "16px",
+    cursor: "pointer",
+    transition: "all 0.3s ease"
+  
+  }
+
   };
 
 export default TeacherDashboard;
