@@ -180,33 +180,33 @@ def create_slide_deck(data: SlideDeckRequest):
 
         service = get_slides_service()
 
-        # 2. Create a new presentation
-        presentation = service.presentations().create(
-            body={"title": course["course_data"].get("courseTitle", "Untitled Course")}
-        ).execute()
-        presentation_id = presentation['presentationId']
+        # 2. Prepare a dict to store week -> presentation_id
+        week_presentations = {}
 
         # 3. Loop through weeks/slides
         for week_key, week_data in course["course_data"].items():
             if not week_key.startswith("week"):
                 continue  
 
+            # 3a. Create a new presentation for this week
+            week_title = week_data.get("weekTitle", week_key.capitalize())
+            presentation = service.presentations().create(
+                body={"title": f"{course['course_data'].get('courseTitle', 'Untitled Course')} - {week_title}"}
+            ).execute()
+            presentation_id = presentation['presentationId']
+            week_presentations[week_key] = presentation_id
+
+            # 3b. Loop through slides of this week
             for slide in week_data.get("slides", []):
                 slide_title = slide.get("title", "")
                 slide_desc = slide.get("explanation", "")
 
-                # 3a. Create a new blank slide (no placeholders)
+                # Create a new blank slide
                 create_slide_response = service.presentations().batchUpdate(
                     presentationId=presentation_id,
                     body={
                         "requests": [
-                            {
-                                "createSlide": {
-                                    "slideLayoutReference": {
-                                        "predefinedLayout": "BLANK"
-                                    }
-                                }
-                            }
+                            {"createSlide": {"slideLayoutReference": {"predefinedLayout": "BLANK"}}}
                         ]
                     }
                 ).execute()
@@ -215,7 +215,7 @@ def create_slide_deck(data: SlideDeckRequest):
 
                 insert_requests = []
 
-                # 3b. Create title text box
+                # Title box
                 new_title_id = f"title_{new_slide_id}"
                 insert_requests.append({
                     "createShape": {
@@ -223,27 +223,19 @@ def create_slide_deck(data: SlideDeckRequest):
                         "shapeType": "TEXT_BOX",
                         "elementProperties": {
                             "pageObjectId": new_slide_id,
-                            "size": {
-                                "height": {"magnitude": 80, "unit": "PT"},
-                                "width": {"magnitude": 600, "unit": "PT"}
-                            },
-                            "transform": {
-                                "scaleX": 1, "scaleY": 1,
-                                "translateX": 50, "translateY": 50,
-                                "unit": "PT"
-                            }
+                            "size": {"height": {"magnitude": 80, "unit": "PT"},
+                                     "width": {"magnitude": 600, "unit": "PT"}},
+                            "transform": {"scaleX": 1, "scaleY": 1,
+                                          "translateX": 50, "translateY": 50,
+                                          "unit": "PT"}
                         }
                     }
                 })
                 insert_requests.append({
-                    "insertText": {
-                        "objectId": new_title_id,
-                        "insertionIndex": 0,
-                        "text": slide_title
-                    }
+                    "insertText": {"objectId": new_title_id, "insertionIndex": 0, "text": slide_title}
                 })
 
-                # 3c. Create body text box
+                # Body box
                 new_body_id = f"body_{new_slide_id}"
                 insert_requests.append({
                     "createShape": {
@@ -251,27 +243,19 @@ def create_slide_deck(data: SlideDeckRequest):
                         "shapeType": "TEXT_BOX",
                         "elementProperties": {
                             "pageObjectId": new_slide_id,
-                            "size": {
-                                "height": {"magnitude": 300, "unit": "PT"},
-                                "width": {"magnitude": 600, "unit": "PT"}
-                            },
-                            "transform": {
-                                "scaleX": 1, "scaleY": 1,
-                                "translateX": 50, "translateY": 150,
-                                "unit": "PT"
-                            }
+                            "size": {"height": {"magnitude": 300, "unit": "PT"},
+                                     "width": {"magnitude": 600, "unit": "PT"}},
+                            "transform": {"scaleX": 1, "scaleY": 1,
+                                          "translateX": 50, "translateY": 150,
+                                          "unit": "PT"}
                         }
                     }
                 })
                 insert_requests.append({
-                    "insertText": {
-                        "objectId": new_body_id,
-                        "insertionIndex": 0,
-                        "text": slide_desc
-                    }
+                    "insertText": {"objectId": new_body_id, "insertionIndex": 0, "text": slide_desc}
                 })
 
-                # 3d. Apply requests
+                # Apply all insert requests
                 if insert_requests:
                     service.presentations().batchUpdate(
                         presentationId=presentation_id,
@@ -283,8 +267,8 @@ def create_slide_deck(data: SlideDeckRequest):
         course["user_id"] = str(course["user_id"])
 
         return {
-            "message": "Presentation created with course slides",
-            "presentation_id": presentation_id
+            "message": "Presentations created for each week",
+            "week_presentations": week_presentations
         }
 
     except Exception as e:
