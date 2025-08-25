@@ -172,7 +172,7 @@ def get_slides_service():
 @app.post("/slides/create")
 def create_slide_deck(data: SlideDeckRequest):
     try:
-        # Find the course in DB
+        # Find the course
         course = courses_collection.find_one({"_id": ObjectId(data.course_id)})
         if not course:
             raise HTTPException(status_code=404, detail="Course not found")
@@ -181,37 +181,144 @@ def create_slide_deck(data: SlideDeckRequest):
 
         # Create a new presentation
         presentation = service.presentations().create(
-            body={"title": course["course_data"].get("title", "Untitled Course")}
+            body={"title": course["course_data"].get("courseTitle", "Untitled Course")}
         ).execute()
         presentation_id = presentation['presentationId']
 
-        # Add a slide
-        requests = [
-            {
-                'createSlide': {
-                    'slideLayoutReference': {
-                        'predefinedLayout': 'TITLE_AND_BODY'
-                    }
-                }
-            }
-        ]
-        service.presentations().batchUpdate(
-            presentationId=presentation_id,
-            body={'requests': requests}
-        ).execute()
+        # Loop through weeks/slides
+        for week_key, week_data in course["course_data"].items():
+            if not week_key.startswith("week"):
+                continue  
 
-        # Convert ObjectId for safe JSON return
+            for slide in week_data.get("slides", []):
+                slide_title = slide.get("title", "")
+                slide_desc = slide.get("explanation", "")
+
+                # 1. Create a new slide
+                create_slide_response = service.presentations().batchUpdate(
+                    presentationId=presentation_id,
+                    body={
+                        "requests": [
+                            {
+                                "createSlide": {
+                                    "slideLayoutReference": {
+                                        "predefinedLayout": "TITLE_AND_BODY"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ).execute()
+
+                # 2. Get the new slide's objectId
+                new_slide_id = create_slide_response["replies"][0]["createSlide"]["objectId"]
+
+                # 3. Fetch slide elements for placeholders
+                presentation_data = service.presentations().get(
+                    presentationId=presentation_id
+                ).execute()
+
+                title_id, body_id = None, None
+                for s in presentation_data["slides"]:
+                    if s["objectId"] == new_slide_id:
+                        for elem in s.get("pageElements", []):
+                            shape_type = elem.get("shape", {}).get("shapeType")
+                            if shape_type == "TITLE":
+                                title_id = elem["objectId"]
+                            elif shape_type == "BODY":
+                                body_id = elem["objectId"]
+
+                insert_requests = []
+
+                # 4. Insert into title placeholder
+                if title_id:
+                    insert_requests.append({
+                        "insertText": {
+                            "objectId": title_id,
+                            "insertionIndex": 0,
+                            "text": slide_title
+                        }
+                    })
+                else:
+                    # Fallback: create text box for title
+                    new_title_id = f"title_{new_slide_id}"
+                    insert_requests.append({
+                        "createShape": {
+                            "objectId": new_title_id,
+                            "shapeType": "TEXT_BOX",
+                            "elementProperties": {
+                                "pageObjectId": new_slide_id,
+                                "size": {"height": {"magnitude": 80, "unit": "PT"}, "width": {"magnitude": 600, "unit": "PT"}},
+                                "transform": {
+                                    "scaleX": 1, "scaleY": 1,
+                                    "translateX": 50, "translateY": 50,
+                                    "unit": "PT"
+                                }
+                            }
+                        }
+                    })
+                    insert_requests.append({
+                        "insertText": {
+                            "objectId": new_title_id,
+                            "insertionIndex": 0,
+                            "text": slide_title
+                        }
+                    })
+
+                # 5. Insert into body placeholder
+                if body_id:
+                    insert_requests.append({
+                        "insertText": {
+                            "objectId": body_id,
+                            "insertionIndex": 0,
+                            "text": slide_desc
+                        }
+                    })
+                else:
+                    # Fallback: create text box for body
+                    new_body_id = f"body_{new_slide_id}"
+                    insert_requests.append({
+                        "createShape": {
+                            "objectId": new_body_id,
+                            "shapeType": "TEXT_BOX",
+                            "elementProperties": {
+                                "pageObjectId": new_slide_id,
+                                "size": {"height": {"magnitude": 300, "unit": "PT"}, "width": {"magnitude": 600, "unit": "PT"}},
+                                "transform": {
+                                    "scaleX": 1, "scaleY": 1,
+                                    "translateX": 50, "translateY": 150,
+                                    "unit": "PT"
+                                }
+                            }
+                        }
+                    })
+                    insert_requests.append({
+                        "insertText": {
+                            "objectId": new_body_id,
+                            "insertionIndex": 0,
+                            "text": slide_desc
+                        }
+                    })
+
+                # 6. Run insert requests
+                if insert_requests:
+                    service.presentations().batchUpdate(
+                        presentationId=presentation_id,
+                        body={"requests": insert_requests}
+                    ).execute()
+
+        # Convert ObjectId for safe JSON
         course["_id"] = str(course["_id"])
         course["user_id"] = str(course["user_id"])
 
         return {
-            "message": "Presentation created with a slide",
-            "presentation_id": presentation_id,
-            "course": course
+            "message": "Presentation created with course slides",
+            "presentation_id": presentation_id
         }
 
     except Exception as e:
         return {"error": str(e)}
+
 
 @app.post("/courses/save")
 def save_course(course: CoursePayload):
